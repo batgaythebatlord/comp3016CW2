@@ -366,12 +366,12 @@ int main()
 
         //Rock (changes MVP in relation to past values)
         ShadersRock.use();
-        model = scale(model, vec3(0.0025f, 0.0025f, 0.0025f));
+        model = scale(model, vec3(0.005f, 0.005f, 0.005f));
         SetMatrices(ShadersRock);
         Rock.Draw(ShadersRock);
 
         //Terrain (reorient MVP back to starting values)
-        model = scale(model, vec3(400.0f, 400.0f, 400.0f));
+        model = scale(model, vec3(200.0f, 200.0f, 200.0f));
         SetMatrices(ShadersRock);
 
         //Refreshing
