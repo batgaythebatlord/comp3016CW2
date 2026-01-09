@@ -3,7 +3,6 @@
 
 //GLAD
 #include <glad/glad.h>
-//#include <GLFW/glfw3.h>
 
 //GLM
 #include "glm/ext/vector_float3.hpp"
@@ -24,6 +23,7 @@
 
 //SPECIALISED
 #include "FastNoiseLite.h"
+#include "stb_image.h"
 
 
 using namespace std;
@@ -115,19 +115,32 @@ int main()
 
 
     //Load shaders (terrain)
-    ShaderInfo shaders[] =
+    ShaderInfo shadersTerrain[] =
     {
         { GL_VERTEX_SHADER, "shaders/vertexShader.vert" },
         { GL_FRAGMENT_SHADER, "shaders/fragmentShader.frag" },
         { GL_NONE, NULL }
     };
 
-    program = LoadShaders(shaders);
+    program = LoadShaders(shadersTerrain);
     glUseProgram(program);
 
 
-    //Shader ShadersTerrain("shaders/vertexShader.vert", "shaders/fragmentShader.frag");
-    //ShadersTerrain.use();
+
+
+    //Load shaders (image)
+    ShaderInfo shadersImage[] =
+    {
+        { GL_VERTEX_SHADER, "shaders/vertImageShader.vert" },
+        { GL_FRAGMENT_SHADER, "shaders/fragImageShader.frag" },
+        { GL_NONE, NULL }
+    };
+
+    program = LoadShaders(shadersImage);
+    glUseProgram(program);
+
+
+
 
     //Sets the viewport size within the window to match the window size of 1280x720
     glViewport(0, 0, 1280, 720);
@@ -201,15 +214,6 @@ int main()
         terrainVertices[i][0] = columnVerticesOffset;
         terrainVertices[i][2] = rowVerticesOffset;
 
-        ////Determination of biomes based on height
-        //if (terrainVertices[i][1] >= (0.5f / 8.0f))
-        //{
-        //    //Snow
-        //    terrainVertices[i][3] = 1.0f;
-        //    terrainVertices[i][4] = 1.0f;
-        //    terrainVertices[i][5] = 1.0f;
-        //}
-
         if (terrainVertices[i][1] <= -(0.5f / 8.0f))
         {
             //Low cloud
@@ -272,6 +276,26 @@ int main()
         }
     }
 
+
+
+
+
+    float vertices[] = {
+        //Positions             //Textures
+        0.5f, 0.5f, 0.0f,       1.0f, 1.0f, //top right
+        0.5f, -0.5f, 0.0f,      1.0f, 0.0f, //bottom right
+        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, //bottom left
+        -0.5f, 0.5f, 0.0f,      0.0f, 1.0f  //top left
+    };
+
+    unsigned int indices[] = {
+        0, 1, 3, //first triangle
+        1, 2, 3 //second triangle
+    };
+
+
+
+
     //Sets index of VAO
     glGenVertexArrays(NumVAOs, VAOs);
     //Binds VAO to a buffer
@@ -304,8 +328,49 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glEnable(GL_DEPTH_TEST); //Enables depth testing
 
+
+
+
+    //Texture index
+    unsigned int texture;
+    //Textures to generate
+    glGenTextures(1, &texture);
+
+    //Binding texture to type 2D texture
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    //Selects x axis (S) of texture bound to GL_TEXTURE_2D & sets to repeat beyond normalised coordinates
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    //Selects y axis (T) equivalently
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //Parameters that will be sent & set based on retrieved texture
+    int width, height, colourChannels;
+    //Retrieves texture data
+    unsigned char* data = stbi_load("C:\\Users\\Public\\OpenGL\\woodPlanks.jpg", &width, &height, &colourChannels, 0);
+
+    if (data) //If retrieval successful
+    {
+        //Generation of texture from retrieved texture data
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        //Automatically generates all required mipmaps on bound texture
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else //If retrieval unsuccessful
+    {
+        cout << "Failed to load texture.\n";
+        return -1;
+    }
+
+    //Clears retrieved texture from memory
+    stbi_image_free(data);
+
+
+
+
     Shader ShadersTerrain("shaders/vertexShader.vert", "shaders/fragmentShader.frag");
     Shader ShadersRock("shaders/vertRockShader.vert", "shaders/fragRockShader.frag");
+    Shader ShadersImage("shaders/vertImageShader.vert", "shaders/fragImageShader.frag");
     Model Rock("media/rock/Rock07-Base.obj");
 
     //Model matrix
@@ -319,16 +384,6 @@ int main()
 
     //Projection matrix
     projection = perspective(radians(45.0f), (float)windowWidth / (float)windowHeight, 0.1f, 100.0f);
-
-
-    ////Sets the viewport size within the window to match the window size of 1280x720
-    //glViewport(0, 0, 1280, 720);
-
-    ////Sets the framebuffer_size_callback() function as the callback for the window resizing event
-    //glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    ////Sets the mouse_callback() function as the callback for the mouse movement event
-    //glfwSetCursorPosCallback(window, mouse_callback);
 
     //Render loop
     while (glfwWindowShouldClose(window) == false)
@@ -346,23 +401,23 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT); //Clears the colour buffer
         glClear(GL_DEPTH_BUFFER_BIT); //Might need
 
-        //glEnable(GL_CULL_FACE); //Discards all back-facing triangles
-
         //Transformations
         view = lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp); //Sets the position of the viewer, the movement direction in relation to it & the world up direction
-        //mat4 mvp = projection * view * model;
-        //int mvpLoc = glGetUniformLocation(program, "mvpIn");
 
-        //glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, value_ptr(mvp));
+        ShadersImage.use();
+        SetMatrices(ShadersImage);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindVertexArray(VAOs[0]); //Bind buffer object to render; VAOs[0]
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
         ShadersTerrain.use();
-        //model = scale(model, vec3(2.0f, 2.0f, 2.0f));
         SetMatrices(ShadersTerrain);
 
         //Drawing
         glBindVertexArray(VAOs[0]);
         glDrawElements(GL_TRIANGLES, MAP_SIZE * 32, GL_UNSIGNED_INT, 0);
-        //SetMatrices(ShadersTerrain);
 
         //Rock (changes MVP in relation to past values)
         ShadersRock.use();
