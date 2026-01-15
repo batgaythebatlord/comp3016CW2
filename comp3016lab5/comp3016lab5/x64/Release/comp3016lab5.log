@@ -1,1 +1,5 @@
-﻿LINK : fatal error LNK1181: cannot open input file 'assimp-vc143-mt.lib'
+﻿  Generating code
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+  All 827 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  comp3016lab5.vcxproj -> C:\Users\carri\Documents\GitHub\comp3016CW2\comp3016lab5\x64\Release\comp3016lab5.exe
